@@ -2277,6 +2277,30 @@ async def daily_dispatch_report(date: Optional[str] = None, user=Depends(get_cur
     }
 
 
+# ======================== Voice Parsing (text-only) ========================
+class VoiceParseIn(BaseModel):
+    text: str
+    customer_hint: Optional[str] = None
+
+
+@api_router.post("/voice/parse")
+async def voice_parse(body: VoiceParseIn, user=Depends(get_current_user)):
+    """Parse a free-form Hinglish/English order transcript into structured
+    items + a fuzzy-matched customer, WITHOUT calling Whisper. Used when
+    the operator types/edits the transcript manually or when an external
+    STT pipeline supplies the text. Returns the same shape as
+    `/voice/transcribe` minus the `text` field already passed in."""
+    text = (body.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty text")
+    parsed = await parse_voice_order_with_items(text)
+    # If the caller passes a customer hint, prefer matching against it so a
+    # known party name spoken loosely still resolves correctly. Otherwise
+    # fall back to matching against the entire text.
+    customer_match = await match_customer_from_voice(body.customer_hint or text)
+    return {"text": text, "parsed_items": parsed, "parsed_customer": customer_match}
+
+
 # ======================== Voice Transcription ========================
 @api_router.post("/voice/transcribe")
 async def voice_transcribe(file: UploadFile = File(...), user=Depends(get_current_user)):

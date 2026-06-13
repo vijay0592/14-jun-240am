@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 2 frontend smoke test PASSED. All requested UI flows work end-to-end: login page, admin/operator quick chips, admin & operator login with attestation dialog skip, sidebar nav (incl. role-based visibility), all 11 main page routes render without React error boundary or white screen, EN<->HI i18n toggle on login changes content, and logout returns to /login.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_2.json",
+    "/app/test_reports/iteration_1.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Layout.jsx: Suppliers/AdminUsers/Admin Settings/Login Attestations are nested under a collapsible 'Settings' group (not top-level). Working as designed but worth noting for QA discoverability.",
+    "Login.jsx defaults email/password fields to 'admin'/'admin123' as a dev convenience. Consider removing pre-filled credentials for production builds.",
+    "LoginAttestationDialog appears on every login (mobile enforced, desktop allows Skip). Desktop UX could surface this as a one-time consent rather than per-login."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only iteration)", "frontend": "100%"},
+  "test_credentials": "admin/admin123 (admin role), user/user123 (operator role) — from /app/memory/test_credentials.md",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Frontend smoke is GREEN on https://fetch-and-build.preview.emergentagent.com. Login form has data-testid='login-form', 'login-email', 'login-password', 'login-submit', 'quick-admin', 'quick-user'. Language switcher uses data-testid='lang-btn-en' and 'lang-btn-hi' (Hindi label is the devanagari 'हिं', not 'HI'). After successful login a LoginAttestationDialog appears — on desktop click the 'Skip' button to proceed to dashboard. Sidebar nav testids: nav-dashboard, nav-orders, nav-dispatch, nav-purchase-center (admin only), nav-dispatch-ledger, nav-daily-report, then a collapsible 'Settings' group [nav-settings-group] containing nav-customers, nav-products, nav-suppliers (admin), nav-price-lists (admin), nav-admin-users (admin), nav-admin-settings (admin), nav-login-audit (admin). Logout button: data-testid='logout-btn'. Operator role correctly hides all 6 admin-only entries. All 11 routed pages (Dashboard, Orders, Dispatch, DispatchLedger, DailyReport, Customers, Products, Suppliers, AdminUsers, AdminSettings, LoginAttestations) render without React error boundary. No backend bugs surfaced from UI exercise.",
+  "tests_executed": [
+    "Login page loads with quick-demo chips for admin & operator — PASS",
+    "EN<->HI language toggle (Open the line. <-> लाइन शुरू करें।) — PASS",
+    "Admin login (admin/admin123) + Skip attestation -> /dashboard — PASS",
+    "Operator login (user/user123) + Skip attestation -> /dashboard — PASS",
+    "Admin sees all 7 admin-only nav entries (purchase-center, suppliers, price-lists, admin-users, admin-settings, login-audit) — PASS",
+    "Operator does NOT see any of the 6 admin-only nav entries — PASS",
+    "All 11 protected routes render non-empty <main> content with no error boundary — PASS",
+    "Logout from sidebar returns to /login for both admin and operator — PASS"
+  ]
+}
