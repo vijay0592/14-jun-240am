@@ -66,3 +66,10 @@
   - Full CRUD on lists and on individual items, inline edit (onBlur autosave), cascade-delete items when list is removed.
 - Backend: 6 new endpoints under `/api/vendor-price-lists` + `/{id}/items` (all mutations admin-only, reads open to any auth user).
 - Validated: 16 new pytest + 44 regression = **60/60 backend tests passing**; frontend admin smoke (sidebar labels, page load, dialog, list create, item add) all green.
+
+## Bug Fix: Vendor Price List UX (13 Jun 2026)
+- **Fixed stale items_count badge** on the Vendor Price List index — when navigating Back from the detail view, the parent list now re-fetches so the "N items priced" chip reflects items just added/removed.
+- **Auto-open created list** — clicking Create on a new vendor price list now opens its detail view immediately so the user can start adding items without an extra click.
+- **Re-fetch vendors on dialog open** — adding a vendor in another tab and then opening "New vendor price list" now shows the fresh vendor in the dropdown (was showing stale list from initial mount).
+- **Removed disabled state** on the "New vendor price list" button + added inline amber warning inside the dialog ("No vendors yet. Add one from the Vendors tab…") for users with zero vendors.
+- Verified end-to-end: create list → auto-opens detail → add items → Back → badge shows correct count → reload page → items persist → re-open list → items still there.

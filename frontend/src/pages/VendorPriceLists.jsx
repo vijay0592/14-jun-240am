@@ -68,9 +68,21 @@ export default function VendorPriceLists() {
       setShowAdd(false);
       setForm({ name: "", vendor_id: "", description: "" });
       loadLists();
+      // Auto-open the freshly-created list so the user can immediately add items
+      setActive(data);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Failed");
     }
+  };
+
+  const openCreateDialog = async () => {
+    // Re-fetch vendors so any newly-added supplier (from another tab) shows up
+    try {
+      const { data } = await api.get("/suppliers");
+      setVendors(data || []);
+    } catch { /* keep existing list on failure */ }
+    setForm({ name: "", vendor_id: "", description: "" });
+    setShowAdd(true);
   };
 
   const deleteList = async (pl) => {
@@ -147,9 +159,8 @@ export default function VendorPriceLists() {
             </p>
           </div>
           <Button
-            onClick={() => setShowAdd(true)}
+            onClick={openCreateDialog}
             data-testid="add-vendor-price-list-btn"
-            disabled={vendors.length === 0}
             className="bg-[#E65100] hover:bg-[#CC4800] text-white rounded-sm h-10 px-4 font-bold"
           >
             <Plus className="w-4 h-4 mr-1.5" /> New vendor price list
@@ -240,6 +251,11 @@ export default function VendorPriceLists() {
                     <option key={v.id} value={v.id}>{v.name}{v.city ? ` · ${v.city}` : ""}</option>
                   ))}
                 </select>
+                {vendors.length === 0 && (
+                  <div className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-sm px-2 py-1.5" data-testid="vendor-price-list-no-vendors-warning">
+                    No vendors yet. Add one from the <span className="font-bold">Vendors</span> tab first, then come back.
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-xs font-bold uppercase">List name *</Label>
@@ -303,7 +319,7 @@ export default function VendorPriceLists() {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={() => setActive(null)}
+            onClick={() => { setActive(null); loadLists(); }}
             data-testid="back-to-vendor-price-lists"
             className="rounded-sm border-slate-300 h-9"
           >
