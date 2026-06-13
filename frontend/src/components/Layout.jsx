@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, ClipboardList, Users, PackageCheck, Settings2, LogOut, Plus, Menu, X,
   ShieldCheck, Sliders, FileBarChart2, Tag, ChevronDown, ChevronRight, Cog,
-  ScrollText, Building2, FileText,
+  ScrollText, Building2, FileText, Boxes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -26,6 +26,7 @@ const NAV = [
 const SETTINGS_NAV = [
   { to: "/customers", key: "customers", icon: Users, testid: "nav-customers", adminOnly: false },
   { to: "/products", key: "products", icon: Settings2, testid: "nav-products", adminOnly: false },
+  { to: "/admin/raw-materials", key: "rawMaterials", icon: Boxes, testid: "nav-raw-materials", adminOnly: true },
   { to: "/admin/suppliers", key: "suppliers", icon: Building2, testid: "nav-suppliers", adminOnly: true },
   { to: "/admin/price-lists", key: "priceLists", icon: Tag, testid: "nav-price-lists", adminOnly: true },
   { to: "/admin/users", key: "adminUsers", icon: ShieldCheck, testid: "nav-admin-users", adminOnly: true },

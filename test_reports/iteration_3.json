@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 3 testing PASSED end-to-end. Backend: 15/15 new tests for Raw Materials CRUD + supplier-purchase line items pass; regression suite test_realistic_smoke_iter1.py still 29/29 (no regression). Frontend: admin sees new 'Raw Material' settings nav, creates a raw material via dialog, navigates to Purchase Center, opens the line-item Record purchase dialog, selects supplier + raw material (unit & default rate auto-fill), enters qty, line ₹ and total auto-compute, Save button correctly displays 'Save purchase · ₹<amount>', Add/Remove line works. Operator: nav-raw-materials hidden AND /admin/raw-materials direct nav blocked (redirected).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Purchase Center Record-purchase dialog & filter bar", "issues": ["Date inputs use browser-native <input type='date'> instead of shadcn Calendar/DatePicker — inconsistent look-and-feel across browsers (Chrome shows mm/dd/yyyy, Firefox/Safari differ). Same issue exists in the supplier ledger area."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_raw_materials_iter3.py",
+    "/app/test_reports/pytest/iter3_results.xml",
+    "/app/test_reports/pytest/realistic_smoke.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: replace browser-native date inputs in PurchaseCenter.jsx (filter From/To and dialog Date field) with shadcn Calendar/DatePicker for visual consistency.",
+    "OPTIONAL: backend POST /api/supplier-purchases accepts raw_material_id values that don't exist in raw_materials collection (stored as-is). Confirmed working as documented but consider soft-validation/warn-only if business rules require strict FK."
+  ],
+  "critical_code_review_comments": [
+    "Backend RawMaterials CRUD is clean: uses uuid, excludes _id ({_id:0}), role-gated POST/PATCH/DELETE via require_admin, GET available to operators — matches Suppliers/Products pattern.",
+    "POST /api/supplier-purchases: amount validation (>0) is correct; items[] normalisation skips lines with qty<=0 or blank name silently — acceptable but could log/return a warning if frontend sends malformed lines.",
+    "PurchaseCenter.jsx 'Record purchase' button is correctly disabled when suppliers.length===0; consider also disabling when raw_materials.length===0 OR allow free-text line names (already supported by backend if raw_material_id is null) — minor UX polish.",
+    "RawMaterials.jsx unit dropdown is a native <select> instead of shadcn Select — inconsistent with rest of app's styled selects."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_raw_materials_iter3.py (new — 15 pytest tests, auto-cleanup of TEST_ prefixed data)"
+  ],
+  "success_rate": {"backend": "100% (15/15 new + 29/29 regression)", "frontend": "100% (all requested smoke flows pass)"},
+  "test_credentials": "admin/admin123 (admin), user/user123 (operator) — from /app/memory/test_credentials.md",
+  "seed_data_creation": "Created TEST_UI_SUP_persist supplier + UI_TEST_RM_4245 raw material during frontend test, BOTH CLEANED UP at end. Pytest fixtures auto-create/teardown TEST_ prefixed RMs/suppliers/purchases.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All iter3 features green. Backend testids/endpoints: GET/POST/PATCH/DELETE /api/raw-materials (admin-only mutation), POST /api/supplier-purchases now persists items[] array with line_value=round(qty*rate,2) and auto-builds material summary from items if material field is blank. Frontend testids confirmed: raw-materials-page, raw-materials-add-btn, raw-name-input, raw-unit-select, raw-rate-input, raw-save-btn, purchase-center-page, purchase-center-record-btn (disabled when no suppliers), purchase-center-dialog, purchase-supplier-select, purchase-line-{idx}-rm/qty/unit/rate/remove, purchase-form-total, purchase-center-save (label = 'Save purchase · ₹<computed total>'), nav-raw-materials (under nav-settings-group, adminOnly). Cleanup: pytest fixtures and a tiny inline script in iter3 testing already purged TEST_/UI_TEST_ prefixed data.",
+  "tests_executed": [
+    "Backend: 15 new pytest cases (Raw Materials CRUD admin happy-path, operator role gating GET vs POST/PATCH/DELETE, empty-name 400, supplier-purchase items[] with line_value + auto material, supplier-ledger preserves items, no-items backward compat, amount<=0 rejection, invalid raw_material_id passthrough) — 15/15 PASS",
+    "Backend regression: test_realistic_smoke_iter1.py — 29/29 PASS",
+    "Frontend admin: login + Skip attestation → /dashboard → expand Settings group → nav-raw-materials visible → click loads /admin/raw-materials → Add raw material dialog → fill form → save → row visible in list (toast 'Raw material added')",
+    "Frontend admin: /purchase-center loads → Record purchase button enabled (with supplier present) → dialog opens → supplier dropdown selectable → raw material dropdown auto-fills unit='kg' & rate=99.5 → qty=3 → line ₹298.5, footer Total ₹298.5, Save button label 'Save purchase · ₹298.5' → Add line creates row idx=1 → Remove line removes it",
+    "Frontend operator: nav-raw-materials NOT in DOM under Settings group; direct GET /admin/raw-materials redirects away (Protected adminOnly works)"
+  ]
+}

@@ -19,6 +19,7 @@ import DispatchLedger from "@/pages/DispatchLedger";
 import Suppliers from "@/pages/Suppliers";
 import SupplierLedger from "@/pages/SupplierLedger";
 import PurchaseCenter from "@/pages/PurchaseCenter";
+import RawMaterials from "@/pages/RawMaterials";
 import InstallPrompt from "@/components/InstallPrompt";
 import "@/App.css";
 
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="purchase-center" element={<Protected adminOnly><PurchaseCenter /></Protected>} />
             <Route path="dispatch-ledger" element={<DispatchLedger />} />
             <Route path="products" element={<Products />} />
+            <Route path="admin/raw-materials" element={<Protected adminOnly><RawMaterials /></Protected>} />
             <Route path="reports/daily" element={<DailyReport />} />
             <Route path="admin/users" element={<Protected adminOnly><AdminUsers /></Protected>} />
             <Route path="admin/price-lists" element={<Protected adminOnly><PriceLists /></Protected>} />
