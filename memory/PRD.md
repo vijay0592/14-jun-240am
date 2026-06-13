@@ -82,3 +82,13 @@
   - X button to clear and search again
   - Inline empty-state message when no vendors exist
 - All 29 backend regression tests still passing.
+
+## UX Polish: Address in vendor search + Fuzzy raw-material picker (13 Jun 2026)
+- **Vendor search in Purchase Center** now shows the **address** as a third italic line beneath material/phone/contact — both in the suggestions dropdown AND in the selected-vendor pill. The fuzzy match also indexes `address` so a user can find a vendor by location keyword.
+- **Raw-material picker** in each purchase line item is now a **fuzzy search combobox** (was a native `<select>`):
+  - Click the cell → see all raw materials (paged at 20)
+  - Type to filter by name / unit / notes
+  - Pick → cell becomes an orange pill showing name + unit + default rate, with an X to clear
+  - Selecting still auto-fills unit and default rate into the row (existing behavior preserved)
+- Inline empty-state messages when there are no vendors / no raw materials yet, with hint to add from the relevant Settings tab.
+- Re: earlier "Suppliers Ledger filters and Supplier Payments" offer — the per-vendor `SupplierLedger.jsx` page is driven by the URL (no vendor picker to convert), and the Suppliers master list already has a search. So no change needed there.

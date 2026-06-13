@@ -47,7 +47,7 @@ export default function PurchaseCenter() {
     const q = vendorQuery.trim().toLowerCase();
     if (!q) return suppliers.slice(0, 12);
     return suppliers.filter((s) =>
-      [s.name, s.phone, s.material_category, s.contact_person]
+      [s.name, s.phone, s.material_category, s.contact_person, s.address]
         .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
     ).slice(0, 12);
   }, [suppliers, vendorQuery]);
@@ -343,6 +343,11 @@ export default function PurchaseCenter() {
                               <div className="text-[11px] text-slate-500">
                                 {v.material_category || "—"}{v.phone ? ` · ${v.phone}` : ""}{v.contact_person ? ` · ${v.contact_person}` : ""}
                               </div>
+                              {v.address && (
+                                <div className="text-[11px] text-slate-400 italic mt-0.5 truncate">
+                                  {v.address}
+                                </div>
+                              )}
                             </button>
                           ))
                         )}
@@ -363,6 +368,11 @@ export default function PurchaseCenter() {
                         {selectedVendor.phone ? ` · ${selectedVendor.phone}` : ""}
                         {selectedVendor.contact_person ? ` · ${selectedVendor.contact_person}` : ""}
                       </div>
+                      {selectedVendor.address && (
+                        <div className="text-[11px] text-slate-400 italic mt-0.5">
+                          {selectedVendor.address}
+                        </div>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -408,17 +418,15 @@ export default function PurchaseCenter() {
                   {form.items.map((it, idx) => {
                     const lineVal = Number(it.quantity || 0) * Number(it.rate || 0);
                     return (
-                      <tr key={idx} className="border-t border-slate-100" data-testid={`purchase-line-${idx}`}>
+                      <tr key={idx} className="border-t border-slate-100 align-top" data-testid={`purchase-line-${idx}`}>
                         <td className="px-2 py-1.5">
-                          <select value={it.raw_material_id}
-                                  onChange={(e) => onPickRawMaterial(idx, e.target.value)}
-                                  data-testid={`purchase-line-${idx}-rm`}
-                                  className="w-full h-10 rounded-sm border border-slate-300 px-2 text-sm bg-white">
-                            <option value="">— Pick raw material —</option>
-                            {rawMaterials.map((r) => (
-                              <option key={r.id} value={r.id}>{r.name} ({r.unit || "—"})</option>
-                            ))}
-                          </select>
+                          <RawMaterialPicker
+                            rawMaterials={rawMaterials}
+                            value={it.raw_material_id}
+                            selectedName={it.name}
+                            onPick={(rmId) => onPickRawMaterial(idx, rmId)}
+                            testidPrefix={`purchase-line-${idx}`}
+                          />
                         </td>
                         <td className="px-2 py-1.5">
                           <Input type="number" min="0" step="0.01" value={it.quantity}
@@ -501,6 +509,107 @@ export default function PurchaseCenter() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// =========================================================================
+// Inline fuzzy-search raw-material picker for the purchase line-item table.
+// Mirrors the vendor-picker UX: a search input that opens a suggestion
+// dropdown; once picked, shows a compact pill with name + unit + a clear (X).
+// =========================================================================
+function RawMaterialPicker({ rawMaterials, value, selectedName, onPick, testidPrefix }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const selected = useMemo(
+    () => rawMaterials.find((r) => r.id === value) || null,
+    [rawMaterials, value],
+  );
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rawMaterials.slice(0, 20);
+    return rawMaterials.filter((r) =>
+      [r.name, r.unit, r.notes].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
+    ).slice(0, 20);
+  }, [rawMaterials, query]);
+
+  if (selected) {
+    return (
+      <div
+        className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-sm px-2.5 py-2"
+        data-testid={`${testidPrefix}-rm-selected`}
+      >
+        <div className="min-w-0">
+          <div className="font-bold text-sm text-slate-900 truncate">{selected.name}</div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500">
+            {selected.unit || "—"}{Number(selected.default_rate) > 0 ? ` · default ₹${selected.default_rate}` : ""}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => { onPick(""); setQuery(""); setOpen(true); }}
+          data-testid={`${testidPrefix}-rm-clear`}
+          className="text-slate-400 hover:text-slate-700 shrink-0 ml-2"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <Input
+        value={query || selectedName || ""}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="Search raw material…"
+        data-testid={`${testidPrefix}-rm-input`}
+        className="h-10 pl-8 rounded-sm"
+      />
+      {open && (
+        <div
+          className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-sm shadow-lg max-h-60 overflow-y-auto"
+          data-testid={`${testidPrefix}-rm-suggestions`}
+        >
+          {matches.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-slate-500">
+              {rawMaterials.length === 0
+                ? "No raw materials yet. Add some from the Raw Material tab."
+                : "No raw materials match your search."}
+            </div>
+          ) : (
+            matches.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => { onPick(r.id); setQuery(""); setOpen(false); }}
+                data-testid={`${testidPrefix}-rm-suggestion-${r.id}`}
+                className="w-full text-left px-3 py-2 hover:bg-orange-50 border-b border-slate-100 last:border-b-0"
+              >
+                <div className="font-bold text-sm text-slate-900">{r.name}</div>
+                <div className="text-[11px] text-slate-500">
+                  {r.unit || "—"}
+                  {Number(r.default_rate) > 0 ? ` · default ₹${r.default_rate}` : ""}
+                  {r.notes ? ` · ${r.notes}` : ""}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
