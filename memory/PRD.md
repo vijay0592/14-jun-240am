@@ -49,3 +49,9 @@
 - Verified with new realistic regression suite `/app/backend/tests/test_realistic_smoke_iter1.py` — 29/29 passing (auth, customers, products, orders, dispatch + same-day merge, payments, suppliers, ledger, settings, daily report, attestations, voice parse).
 - Verified frontend smoke (login, role-based nav, all 11 protected routes, i18n EN<->HI, logout) — 100% green.
 - Note: 15 failures in the legacy `tests/test_*.py` files are stale fixtures (hardcoded SEED_CUSTOMER_ID `c823afd1-...` and date 2026-06-12 that pre-date the current fresh seed). Not real bugs; superseded by `test_realistic_smoke_iter1.py`.
+
+## Feature Add: Raw Materials Settings + Line-item Purchase (13 Jun 2026)
+- **NEW Settings tab "Raw Material"** (admin-only) at `/admin/raw-materials` — CRUD for raw material inventory items (name, unit, default rate per unit, notes). i18n: en="Raw Material", hi="कच्चा माल". Reuses existing `/api/raw-materials` backend.
+- **Purchase Center upgraded** — "Record purchase" dialog now mirrors how a Sale is recorded: line-item table with Raw Material dropdown (auto-fills unit + default rate), Qty, Unit, Rate, Line ₹, with auto-computed Total amount. Sum of line items is sent as the purchase amount; backend persists items[] with line_value=qty*rate.
+- Each purchase row in the Purchase Center list now expands to show the raw-material line items beneath the supplier name.
+- Validated: 15 new pytest cases + 29/29 regression suite still passing.
