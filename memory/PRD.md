@@ -73,3 +73,12 @@
 - **Re-fetch vendors on dialog open** — adding a vendor in another tab and then opening "New vendor price list" now shows the fresh vendor in the dropdown (was showing stale list from initial mount).
 - **Removed disabled state** on the "New vendor price list" button + added inline amber warning inside the dialog ("No vendors yet. Add one from the Vendors tab…") for users with zero vendors.
 - Verified end-to-end: create list → auto-opens detail → add items → Back → badge shows correct count → reload page → items persist → re-open list → items still there.
+
+## UX Tweaks: Vendor form + Purchase Center vendor picker (13 Jun 2026)
+- **Vendor form simplified**: removed "City" and "GST number" columns/fields from `Suppliers.jsx` — both the table and the Add/Edit dialog. (Backend still accepts these fields for backwards compat — old data is preserved, just not shown.)
+- **Purchase Center → Record purchase** now uses the same **search-as-you-type vendor picker** as Dispatch Center's customer picker:
+  - Type vendor name / phone / material → fuzzy suggestions appear in a dropdown
+  - Click a suggestion → vendor pill shows the selection (name, material, phone, contact)
+  - X button to clear and search again
+  - Inline empty-state message when no vendors exist
+- All 29 backend regression tests still passing.

@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, FileText, Building2, Search, Calendar, Trash2, Boxes } from "lucide-react";
+import { Plus, FileText, Building2, Search, Calendar, Trash2, Boxes, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,47 @@ export default function PurchaseCenter() {
     items: [{ ...EMPTY_LINE }],
   });
   const [saving, setSaving] = useState(false);
+
+  // Vendor (supplier) search — same UX as Dispatch Center customer picker
+  const [vendorQuery, setVendorQuery] = useState("");
+  const [showVendorSuggest, setShowVendorSuggest] = useState(false);
+  const vendorPickerRef = useRef(null);
+
+  // Close the vendor suggestion dropdown when the user clicks outside it
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (vendorPickerRef.current && !vendorPickerRef.current.contains(e.target)) {
+        setShowVendorSuggest(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const filteredVendors = useMemo(() => {
+    const q = vendorQuery.trim().toLowerCase();
+    if (!q) return suppliers.slice(0, 12);
+    return suppliers.filter((s) =>
+      [s.name, s.phone, s.material_category, s.contact_person]
+        .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
+    ).slice(0, 12);
+  }, [suppliers, vendorQuery]);
+
+  const selectedVendor = useMemo(
+    () => suppliers.find((s) => s.id === form.supplier_id) || null,
+    [suppliers, form.supplier_id],
+  );
+
+  const pickVendor = (v) => {
+    setForm((f) => ({ ...f, supplier_id: v.id }));
+    setVendorQuery("");
+    setShowVendorSuggest(false);
+  };
+  const clearVendor = () => {
+    setForm((f) => ({ ...f, supplier_id: "" }));
+    setVendorQuery("");
+    setShowVendorSuggest(true);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -80,10 +121,12 @@ export default function PurchaseCenter() {
 
   const openCreate = () => {
     setForm({
-      supplier_id: suppliers[0]?.id || "",
+      supplier_id: "",
       bill_number: "", purchased_at: todayIso(), notes: "",
       items: [{ ...EMPTY_LINE }],
     });
+    setVendorQuery("");
+    setShowVendorSuggest(false);
     setOpen(true);
   };
 
@@ -109,7 +152,7 @@ export default function PurchaseCenter() {
   }));
 
   const save = async () => {
-    if (!form.supplier_id) { toast.error("Pick a supplier"); return; }
+    if (!form.supplier_id) { toast.error("Pick a vendor"); return; }
     const lines = form.items
       .map((it) => ({
         raw_material_id: it.raw_material_id || null,
@@ -155,7 +198,6 @@ export default function PurchaseCenter() {
           </p>
         </div>
         <Button onClick={openCreate}
-                disabled={suppliers.length === 0}
                 data-testid="purchase-center-record-btn"
                 className="bg-slate-900 hover:bg-slate-800 text-white rounded-sm h-10">
           <FileText className="w-4 h-4 mr-1" /> Record purchase
@@ -169,18 +211,18 @@ export default function PurchaseCenter() {
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input value={filter.q} onChange={(e) => setFilter((f) => ({ ...f, q: e.target.value }))}
-                   placeholder="Supplier, material, bill #"
+                   placeholder="Vendor, material, bill #"
                    data-testid="purchase-center-search"
                    className="pl-9 h-10 rounded-sm mt-1" />
           </div>
         </div>
         <div className="sm:col-span-3">
-          <Label className="text-[10px] uppercase font-bold text-slate-500">Supplier</Label>
+          <Label className="text-[10px] uppercase font-bold text-slate-500">Vendor</Label>
           <select value={filter.supplier_id}
                   onChange={(e) => setFilter((f) => ({ ...f, supplier_id: e.target.value }))}
                   data-testid="purchase-center-supplier-filter"
                   className="mt-1 w-full h-10 rounded-sm border border-slate-300 px-3 text-sm bg-white">
-            <option value="">All suppliers</option>
+            <option value="">All vendors</option>
             {suppliers.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
           </select>
         </div>
@@ -207,7 +249,7 @@ export default function PurchaseCenter() {
           <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-600 font-bold">
             <tr>
               <th className="text-left px-3 py-2">Date</th>
-              <th className="text-left px-3 py-2">Supplier</th>
+              <th className="text-left px-3 py-2">Vendor</th>
               <th className="text-left px-3 py-2">Material</th>
               <th className="text-left px-3 py-2">Bill #</th>
               <th className="text-right px-3 py-2">Amount (₹)</th>
@@ -218,7 +260,7 @@ export default function PurchaseCenter() {
             {!loading && filtered.length === 0 && (
               <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-500" data-testid="purchases-empty">
                 {suppliers.length === 0
-                  ? "Add a supplier first from Suppliers, then record a purchase."
+                  ? "Add a vendor first from Vendors, then record a purchase."
                   : "No purchases match the current filters."}
               </td></tr>
             )}
@@ -264,15 +306,74 @@ export default function PurchaseCenter() {
           </DialogHeader>
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <Label className="text-xs font-bold uppercase">Supplier *</Label>
-                <select value={form.supplier_id}
-                        onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))}
-                        data-testid="purchase-supplier-select"
-                        className="mt-1 w-full h-11 rounded-sm border border-slate-300 px-3 text-sm bg-white">
-                  <option value="">— Pick a supplier —</option>
-                  {suppliers.map((s) => (<option key={s.id} value={s.id}>{s.name}{s.city ? ` · ${s.city}` : ""}</option>))}
-                </select>
+              <div className="sm:col-span-2" ref={vendorPickerRef}>
+                <Label className="text-xs font-bold uppercase">Vendor *</Label>
+                {!selectedVendor ? (
+                  <div className="relative mt-1">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      data-testid="purchase-vendor-input"
+                      value={vendorQuery}
+                      onChange={(e) => { setVendorQuery(e.target.value); setShowVendorSuggest(true); }}
+                      onFocus={() => setShowVendorSuggest(true)}
+                      placeholder="Type vendor name, phone, material…"
+                      className="pl-9 h-11 rounded-sm"
+                    />
+                    {showVendorSuggest && (
+                      <div
+                        className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-sm shadow-lg max-h-60 overflow-y-auto"
+                        data-testid="purchase-vendor-suggestions"
+                      >
+                        {filteredVendors.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-slate-500">
+                            {suppliers.length === 0
+                              ? "No vendors yet. Add one from the Vendors tab first."
+                              : "No vendors match your search."}
+                          </div>
+                        ) : (
+                          filteredVendors.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => pickVendor(v)}
+                              data-testid={`purchase-vendor-suggestion-${v.id}`}
+                              className="w-full text-left px-3 py-2 hover:bg-orange-50 border-b border-slate-100 last:border-b-0"
+                            >
+                              <div className="font-bold text-sm text-slate-900">{v.name}</div>
+                              <div className="text-[11px] text-slate-500">
+                                {v.material_category || "—"}{v.phone ? ` · ${v.phone}` : ""}{v.contact_person ? ` · ${v.contact_person}` : ""}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="mt-1 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-sm px-3 py-2"
+                    data-testid="purchase-vendor-selected"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm inline-flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400" /> {selectedVendor.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {selectedVendor.material_category || "—"}
+                        {selectedVendor.phone ? ` · ${selectedVendor.phone}` : ""}
+                        {selectedVendor.contact_person ? ` · ${selectedVendor.contact_person}` : ""}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearVendor}
+                      data-testid="purchase-vendor-clear"
+                      className="text-slate-400 hover:text-slate-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-xs font-bold uppercase">Date</Label>

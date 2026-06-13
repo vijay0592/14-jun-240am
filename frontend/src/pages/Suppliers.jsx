@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 const empty = {
-  name: "", phone: "", address: "", city: "",
-  gst_number: "", contact_person: "", material_category: "",
+  name: "", phone: "", address: "",
+  contact_person: "", material_category: "",
   opening_balance: "0", notes: "",
 };
 
@@ -39,7 +39,7 @@ export default function Suppliers() {
     const t = q.trim().toLowerCase();
     if (!t) return rows;
     return rows.filter((s) =>
-      [s.name, s.phone, s.city, s.gst_number, s.material_category, s.contact_person]
+      [s.name, s.phone, s.material_category, s.contact_person]
         .filter(Boolean).some((v) => String(v).toLowerCase().includes(t)),
     );
   }, [rows, q]);
@@ -51,8 +51,6 @@ export default function Suppliers() {
       name: s.name || "",
       phone: s.phone || "",
       address: s.address || "",
-      city: s.city || "",
-      gst_number: s.gst_number || "",
       contact_person: s.contact_person || "",
       material_category: s.material_category || "",
       opening_balance: String(s.opening_balance ?? 0),
@@ -111,7 +109,7 @@ export default function Suppliers() {
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input value={q} onChange={(e) => setQ(e.target.value)}
-               placeholder="Search by name, city, GST, material…"
+               placeholder="Search by name, phone, material…"
                data-testid="suppliers-search-input"
                className="pl-9 h-10 rounded-sm" />
       </div>
@@ -123,19 +121,17 @@ export default function Suppliers() {
               <th className="text-left px-4 py-2">Name</th>
               <th className="text-left px-4 py-2">Material</th>
               <th className="text-left px-4 py-2">Phone</th>
-              <th className="text-left px-4 py-2">City</th>
-              <th className="text-left px-4 py-2">GST</th>
               <th className="text-right px-4 py-2">Opening Bal.</th>
               <th className="text-right px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500" data-testid="suppliers-empty">
-                {rows.length === 0 ? "No suppliers yet. Click Add supplier to begin." : "No suppliers match your search."}
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500" data-testid="suppliers-empty">
+                {rows.length === 0 ? "No vendors yet. Click Add vendor to begin." : "No vendors match your search."}
               </td></tr>
             )}
             {!loading && filtered.map((s) => (
@@ -147,8 +143,6 @@ export default function Suppliers() {
                 </td>
                 <td className="px-4 py-2 text-slate-600">{s.material_category || "—"}</td>
                 <td className="px-4 py-2 text-slate-600 font-mono-num">{s.phone || "—"}</td>
-                <td className="px-4 py-2 text-slate-600">{s.city || "—"}</td>
-                <td className="px-4 py-2 text-slate-500 font-mono text-xs">{s.gst_number || "—"}</td>
                 <td className="px-4 py-2 text-right tabular-nums">₹{Number(s.opening_balance || 0).toLocaleString("en-IN")}</td>
                 <td className="px-4 py-2 text-right space-x-1 whitespace-nowrap">
                   <Link to={`/admin/suppliers/${s.id}`}>
@@ -204,18 +198,6 @@ export default function Suppliers() {
               <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
                      placeholder="Street, area"
                      className="h-11 rounded-sm mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs font-bold uppercase">City</Label>
-              <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                     placeholder="Pune"
-                     className="h-11 rounded-sm mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs font-bold uppercase">GST number</Label>
-              <Input value={form.gst_number} onChange={(e) => setForm((f) => ({ ...f, gst_number: e.target.value }))}
-                     placeholder="27ABCDE1234F1Z5"
-                     className="h-11 rounded-sm mt-1 font-mono" />
             </div>
             <div className="col-span-2">
               <Label className="text-xs font-bold uppercase">Material category</Label>
