@@ -187,9 +187,9 @@ export default function PriceLists() {
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.15em] text-[#E65100] font-bold">Pricing</div>
-            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900">Price Lists</h1>
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900">Customer Price Lists</h1>
             <p className="text-slate-500 text-sm mt-1">
-              Maintain multiple price lists. Assign one to each party from the Customers page.
+              Maintain multiple customer price lists. Assign one to each party from the Customers page.
             </p>
           </div>
           <Button

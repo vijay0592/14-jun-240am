@@ -29,6 +29,7 @@ const SETTINGS_NAV = [
   { to: "/admin/raw-materials", key: "rawMaterials", icon: Boxes, testid: "nav-raw-materials", adminOnly: true },
   { to: "/admin/suppliers", key: "suppliers", icon: Building2, testid: "nav-suppliers", adminOnly: true },
   { to: "/admin/price-lists", key: "priceLists", icon: Tag, testid: "nav-price-lists", adminOnly: true },
+  { to: "/admin/vendor-price-lists", key: "vendorPriceLists", icon: Tag, testid: "nav-vendor-price-lists", adminOnly: true },
   { to: "/admin/users", key: "adminUsers", icon: ShieldCheck, testid: "nav-admin-users", adminOnly: true },
   { to: "/admin/settings", key: "adminSettings", icon: Sliders, testid: "nav-admin-settings", adminOnly: true },
   { to: "/admin/login-attestations", key: "loginAudit", icon: ScrollText, testid: "nav-login-audit", adminOnly: true },

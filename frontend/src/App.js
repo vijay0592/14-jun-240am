@@ -20,6 +20,7 @@ import Suppliers from "@/pages/Suppliers";
 import SupplierLedger from "@/pages/SupplierLedger";
 import PurchaseCenter from "@/pages/PurchaseCenter";
 import RawMaterials from "@/pages/RawMaterials";
+import VendorPriceLists from "@/pages/VendorPriceLists";
 import InstallPrompt from "@/components/InstallPrompt";
 import "@/App.css";
 
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="reports/daily" element={<DailyReport />} />
             <Route path="admin/users" element={<Protected adminOnly><AdminUsers /></Protected>} />
             <Route path="admin/price-lists" element={<Protected adminOnly><PriceLists /></Protected>} />
+            <Route path="admin/vendor-price-lists" element={<Protected adminOnly><VendorPriceLists /></Protected>} />
             <Route path="admin/settings" element={<Protected adminOnly><AdminSettings /></Protected>} />
             <Route path="admin/login-attestations" element={<Protected adminOnly><LoginAttestations /></Protected>} />
             <Route path="admin/suppliers" element={<Protected adminOnly><Suppliers /></Protected>} />

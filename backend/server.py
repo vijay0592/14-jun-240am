@@ -3066,6 +3066,173 @@ async def delete_raw_material(rid: str, admin=Depends(require_admin)):
     return {"ok": True}
 
 
+# ======================== Vendor Price Lists ========================
+# Each vendor (supplier) can have one or many price lists. A list contains
+# free-form line items (item name + unit + price). Items are NOT tied to the
+# SKU master because vendors sell things we don't necessarily resell.
+class VendorPriceListIn(BaseModel):
+    name: str
+    vendor_id: str  # supplier_id
+    description: Optional[str] = ""
+
+
+class VendorPriceListUpdate(BaseModel):
+    name: Optional[str] = None
+    vendor_id: Optional[str] = None
+    description: Optional[str] = None
+
+
+class VendorPriceListItemIn(BaseModel):
+    name: str
+    unit: Optional[str] = ""
+    price: float = 0.0
+    notes: Optional[str] = ""
+
+
+class VendorPriceListItemUpdate(BaseModel):
+    name: Optional[str] = None
+    unit: Optional[str] = None
+    price: Optional[float] = None
+    notes: Optional[str] = None
+
+
+@api_router.get("/vendor-price-lists")
+async def list_vendor_price_lists(user=Depends(get_current_user)):
+    lists = await db.vendor_price_lists.find({}, {"_id": 0}).sort("name", 1).to_list(1000)
+    # Attach vendor_name and items_count for the index view
+    vendor_ids = list({pl.get("vendor_id") for pl in lists if pl.get("vendor_id")})
+    suppliers = {}
+    if vendor_ids:
+        async for s in db.suppliers.find({"id": {"$in": vendor_ids}}, {"_id": 0, "id": 1, "name": 1}):
+            suppliers[s["id"]] = s["name"]
+    out = []
+    for pl in lists:
+        cnt = await db.vendor_price_list_items.count_documents({"vendor_price_list_id": pl["id"]})
+        out.append({**pl, "vendor_name": suppliers.get(pl.get("vendor_id"), ""), "items_count": cnt})
+    return out
+
+
+@api_router.post("/vendor-price-lists")
+async def create_vendor_price_list(body: VendorPriceListIn, admin=Depends(require_admin)):
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name required")
+    sup = await db.suppliers.find_one({"id": body.vendor_id}, {"_id": 0, "id": 1, "name": 1})
+    if not sup:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "vendor_id": body.vendor_id,
+        "vendor_name": sup["name"],
+        "description": (body.description or "").strip(),
+        "created_at": now_iso(),
+        "created_by": admin["email"],
+    }
+    await db.vendor_price_lists.insert_one(doc)
+    doc.pop("_id", None)
+    return {**doc, "items_count": 0}
+
+
+@api_router.get("/vendor-price-lists/{vpl_id}")
+async def get_vendor_price_list(vpl_id: str, user=Depends(get_current_user)):
+    pl = await db.vendor_price_lists.find_one({"id": vpl_id}, {"_id": 0})
+    if not pl:
+        raise HTTPException(status_code=404, detail="Vendor price list not found")
+    items = await db.vendor_price_list_items.find(
+        {"vendor_price_list_id": vpl_id}, {"_id": 0}
+    ).sort("name", 1).to_list(5000)
+    return {**pl, "items": items}
+
+
+@api_router.patch("/vendor-price-lists/{vpl_id}")
+async def update_vendor_price_list(vpl_id: str, body: VendorPriceListUpdate, admin=Depends(require_admin)):
+    upd: Dict[str, Any] = {"updated_at": now_iso(), "updated_by": admin["email"]}
+    if body.name is not None:
+        n = body.name.strip()
+        if not n:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        upd["name"] = n
+    if body.description is not None:
+        upd["description"] = body.description.strip()
+    if body.vendor_id is not None:
+        sup = await db.suppliers.find_one({"id": body.vendor_id}, {"_id": 0, "id": 1, "name": 1})
+        if not sup:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+        upd["vendor_id"] = body.vendor_id
+        upd["vendor_name"] = sup["name"]
+    res = await db.vendor_price_lists.update_one({"id": vpl_id}, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Vendor price list not found")
+    return await db.vendor_price_lists.find_one({"id": vpl_id}, {"_id": 0})
+
+
+@api_router.delete("/vendor-price-lists/{vpl_id}")
+async def delete_vendor_price_list(vpl_id: str, admin=Depends(require_admin)):
+    res = await db.vendor_price_lists.delete_one({"id": vpl_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Vendor price list not found")
+    # Cascade delete its items
+    await db.vendor_price_list_items.delete_many({"vendor_price_list_id": vpl_id})
+    return {"ok": True}
+
+
+@api_router.post("/vendor-price-lists/{vpl_id}/items")
+async def add_vendor_price_list_item(vpl_id: str, body: VendorPriceListItemIn, admin=Depends(require_admin)):
+    pl = await db.vendor_price_lists.find_one({"id": vpl_id}, {"_id": 0, "id": 1})
+    if not pl:
+        raise HTTPException(status_code=404, detail="Vendor price list not found")
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Item name required")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "vendor_price_list_id": vpl_id,
+        "name": name,
+        "unit": (body.unit or "").strip(),
+        "price": round(float(body.price or 0), 2),
+        "notes": (body.notes or "").strip(),
+        "created_at": now_iso(),
+    }
+    await db.vendor_price_list_items.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.patch("/vendor-price-lists/{vpl_id}/items/{vpi_id}")
+async def update_vendor_price_list_item(
+    vpl_id: str, vpi_id: str, body: VendorPriceListItemUpdate, admin=Depends(require_admin)
+):
+    upd: Dict[str, Any] = {"updated_at": now_iso()}
+    if body.name is not None:
+        n = body.name.strip()
+        if not n:
+            raise HTTPException(status_code=400, detail="Item name cannot be empty")
+        upd["name"] = n
+    if body.unit is not None:
+        upd["unit"] = body.unit.strip()
+    if body.price is not None:
+        upd["price"] = round(float(body.price), 2)
+    if body.notes is not None:
+        upd["notes"] = body.notes.strip()
+    res = await db.vendor_price_list_items.update_one(
+        {"id": vpi_id, "vendor_price_list_id": vpl_id}, {"$set": upd}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found in this vendor price list")
+    return await db.vendor_price_list_items.find_one({"id": vpi_id}, {"_id": 0})
+
+
+@api_router.delete("/vendor-price-lists/{vpl_id}/items/{vpi_id}")
+async def delete_vendor_price_list_item(vpl_id: str, vpi_id: str, admin=Depends(require_admin)):
+    res = await db.vendor_price_list_items.delete_one(
+        {"id": vpi_id, "vendor_price_list_id": vpl_id}
+    )
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found in this vendor price list")
+    return {"ok": True}
+
+
 class SupplierIn(BaseModel):
     name: str
     phone: Optional[str] = ""

@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 4 testing PASSED. Backend: 16/16 new pytest cases for Vendor Price Lists CRUD + items CRUD pass; regression test_realistic_smoke_iter1 (29/29) + test_raw_materials_iter3 (15/15) still green — total 60/60. Frontend: admin sidebar shows the renamed labels 'Vendors', 'Customer Price List', 'Vendor Price List' under Settings; /admin/vendor-price-lists page loads, empty-state correctly tells user to 'Add a vendor first…' when no vendors exist, then after creating a vendor the dialog opens, native vendor <select> lists the vendor, save creates the list, detail page opens and an item (TEST_Item_A · kg · 125.5) can be added — row + delete button render. Customer Price Lists page H1 reads 'Customer Price Lists' (per code) and Suppliers page H1 reads 'Vendors' with 'Add vendor' label (verified in source).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Vendor Price List → item row", "issues": ["Per-row inline 'Save' button is conditional on dirty state and shares a data-testid prefix (vendor-item-name-) with the top 'Add item' name input (vendor-item-name-input). Both match selectors starting with 'vendor-item-name-' — confusing for automated tests. Consider renaming the add form testids to vendor-item-new-name-input / vendor-item-new-unit-input / vendor-item-new-price-input to avoid prefix collisions with row testids."]},
+      {"screen": "Vendor Price List dialog", "issues": ["The vendor selector uses a native <select> element instead of the shadcn Select component used elsewhere in the app — inconsistent visual style with the rest of the admin UI (same pattern was flagged on RawMaterials in iter3)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_vendor_price_lists_iter4.py",
+    "/app/test_reports/pytest/iter4_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/MINOR: Rename the 'Add item' form testids in VendorPriceLists.jsx from vendor-item-name-input / vendor-item-unit-input / vendor-item-price-input to a non-colliding prefix (e.g. vendor-item-new-*) so they don't match `[data-testid^=\"vendor-item-name-\"]` row selectors. Same with vendor-item-add-btn → vendor-item-new-add-btn (less critical).",
+    "OPTIONAL: Replace the native <select> in the Create-VPL dialog with the shadcn Select component for visual parity with the rest of the admin UI."
+  ],
+  "critical_code_review_comments": [
+    "Backend vendor-price-lists endpoints follow the established pattern: uuid id, {_id:0} projection on all reads, require_admin on mutations, get_current_user on reads — clean and consistent with raw-materials/suppliers.",
+    "Cascade delete on DELETE /api/vendor-price-lists/{vpl_id} correctly purges vendor_price_list_items children (verified via test_cascade_delete_removes_items).",
+    "Pydantic models for VendorPriceListIn declare `name: str` and `vendor_id: str` as required (no Optional). If a client sends a JSON body that completely omits these keys, FastAPI returns 422, not the 400/404 the spec hints at. The endpoint still produces 400 for empty-string `name` and 404 for missing/unknown vendor, which is what the spec actually wants — so behavior is correct; just documenting for completeness.",
+    "VendorPriceLists.jsx item row inline edit relies on `onBlur={persist}` PLUS a conditional Save button (visible only when dirty). The save button shares a testid prefix `vendor-item-name-/unit-/price-` with the top 'Add item' input fields (which use `-input` suffix), creating a selector collision risk for `[data-testid^=\"vendor-item-name-\"]` queries. Consider unique prefixes for the new-item row.",
+    "i18n entries are consistent across en.json / hi.json for priceLists ('Customer Price List' / 'ग्राहक मूल्य सूची'), vendorPriceLists ('Vendor Price List' / 'विक्रेता मूल्य सूची'), suppliers ('Vendors' / 'विक्रेता').",
+    "Layout.jsx SETTINGS_NAV entry for vendorPriceLists is correctly adminOnly with testid nav-vendor-price-lists; verified hidden for operator role earlier (raw-materials test pattern equivalent)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_vendor_price_lists_iter4.py (new — 16 pytest cases covering vendor-price-list CRUD, items CRUD, cascade delete, operator role gating across all mutations, and regression on /api/price-lists + /api/suppliers)"
+  ],
+  "success_rate": {"backend": "100% (16/16 new + 44/44 regression = 60/60)", "frontend": "100% on the requested smoke flows (page load, dialog open, vendor select populated, VPL created, detail page load, item add). Inline edit & delete sub-steps in the same Playwright run hit a selector-prefix collision in the test script, but UI rendering of the row + edit/delete controls was visually confirmed correct."},
+  "test_credentials": "admin/admin123 (admin), user/user123 (operator) — from /app/memory/test_credentials.md. Token field in /api/auth/login response is `token` (not access_token).",
+  "seed_data_creation": "Pytest fixtures auto-create/teardown TEST_VPL_ vendor + TEST_VPL_ price lists/items. For frontend smoke, created TEST_UI_VENDOR_ITER4 supplier + TEST_VPL_UI_<rand> vendor-price-list with one item TEST_Item_A; ALL CLEANED UP at end via API DELETE calls (verified gone).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter4 endpoints verified: GET (any user) /api/vendor-price-lists, POST/PATCH/DELETE (admin) /api/vendor-price-lists, GET (any) /api/vendor-price-lists/{id}, POST/PATCH/DELETE (admin) /api/vendor-price-lists/{vpl_id}/items[/{vpi_id}]. Note: required Pydantic fields (name, vendor_id) return 422 if completely omitted from JSON body; send '' to get the 400 from the endpoint-level check, or send a non-existent vendor_id to get 404 (the test file uses both patterns). Backend token JSON key is `token`. Frontend testids verified: vendor-price-lists-page, vendor-price-lists-empty, add-vendor-price-list-btn (disabled when vendors.length===0), vendor-price-list-create-dialog (Radix), vendor-price-list-vendor-select (NATIVE <select> — use page.select_option, not click+role=option), vendor-price-list-name-input, vendor-price-list-save-btn, open-vendor-price-list-{id}, vendor-price-list-detail-page, vendor-item-name-input/unit-input/price-input/add-btn (the new-item form), vendor-item-row-{id} containing vendor-item-name-{id}/unit-{id}/price-{id}/delete-{id}, vendor-item-save-{id} (only visible when row is dirty — persists onBlur otherwise), vendor-item-delete-confirm, back-to-vendor-price-lists, nav-vendor-price-lists (under nav-settings-group, adminOnly). WARNING for next agent: row testids `vendor-item-name-{id}` share prefix with new-item input `vendor-item-name-input` — use `:not([data-testid$=\"-input\"])` or exact id match.",
+  "tests_executed": [
+    "Backend: 16 new pytest cases (CRUD create requires name=400 and existing vendor=404; create+GET+PATCH+DELETE happy path; item add requires name=400 and existing vpl=404; full item lifecycle add/edit/delete; cascade delete removes items; operator gating: can GET both, forbidden POST/PATCH/DELETE on list AND items; regression: /api/price-lists and /api/suppliers return 200) — 16/16 PASS",
+    "Backend regression: test_realistic_smoke_iter1.py (29/29) + test_raw_materials_iter3.py (15/15) — 44/44 PASS",
+    "Frontend admin: login + Skip attestation → expand Settings group → labels 'Vendors', 'Customer Price List', 'Vendor Price List' all present (count 1 each) → click nav-vendor-price-lists loads /admin/vendor-price-lists (empty state correctly says 'Add a vendor first…' when no vendors)",
+    "Frontend admin: after seeding a vendor via API, Add button is enabled, dialog opens, native select lists TEST_UI_VENDOR_ITER4, list created, detail page loads, item TEST_Item_A · kg · ₹125.5 added (row visible with name/unit/price inputs + delete button)",
+    "Source-level verification: Suppliers.jsx h1='Vendors', 'Add vendor' button + 'Edit vendor'/'Add vendor' dialog title + 'Delete vendor?' confirm; PriceLists.jsx h1='Customer Price Lists'; en.json/hi.json keys priceLists/vendorPriceLists/suppliers all updated as spec"
+  ]
+}

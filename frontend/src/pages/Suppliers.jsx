@@ -95,16 +95,16 @@ export default function Suppliers() {
             Admin · Vendor Master
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
-            Suppliers
+            Vendors
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Vendors that provide raw material. Each supplier has its own ledger of purchases and payments.
+            Vendors that provide raw material. Each vendor has its own ledger of purchases and payments.
           </p>
         </div>
         <Button onClick={openCreate}
                 data-testid="suppliers-add-btn"
                 className="bg-[#E65100] hover:bg-[#CC4800] text-white rounded-sm h-10">
-          <Plus className="w-4 h-4 mr-1" /> Add supplier
+          <Plus className="w-4 h-4 mr-1" /> Add vendor
         </Button>
       </div>
 
@@ -174,7 +174,7 @@ export default function Suppliers() {
         <DialogContent className="rounded-sm max-w-2xl" data-testid="supplier-dialog">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {editingId ? "Edit supplier" : "Add supplier"}
+              {editingId ? "Edit vendor" : "Add vendor"}
             </DialogTitle>
             <DialogDescription>
               {editingId ? "Update vendor master details." : "Add a new vendor that supplies you raw material."}
@@ -247,7 +247,7 @@ export default function Suppliers() {
             <Button onClick={save} disabled={saving || !form.name.trim()}
                     data-testid="supplier-save-btn"
                     className="bg-[#E65100] hover:bg-[#CC4800] text-white rounded-sm">
-              {saving ? "Saving…" : (editingId ? "Update supplier" : "Add supplier")}
+              {saving ? "Saving…" : (editingId ? "Update vendor" : "Add vendor")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -257,9 +257,9 @@ export default function Suppliers() {
       <Dialog open={!!confirm} onOpenChange={(o) => { if (!o) setConfirm(null); }}>
         <DialogContent className="rounded-sm max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading">Delete supplier?</DialogTitle>
+            <DialogTitle className="font-heading">Delete vendor?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-bold">{confirm?.name}</span>? This cannot be undone. Suppliers with purchase or payment history cannot be deleted.
+              Are you sure you want to delete <span className="font-bold">{confirm?.name}</span>? This cannot be undone. Vendors with purchase or payment history cannot be deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
